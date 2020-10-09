@@ -89,6 +89,10 @@ class DeformConv2d(nn.Module):
         if out_channels % groups != 0:
             raise ValueError('out_channels must be divisible by groups')
 
+        # Indicates that `bilinear_interpolate` from the original implementation is used.
+        # https://github.com/apache/incubator-mxnet/pull/6298
+        self.is_mxnet_version = True
+
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = _pair(kernel_size)

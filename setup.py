@@ -32,7 +32,7 @@ def get_dist(pkgname):
 
 version = '0.7.0a0'
 sha = 'Unknown'
-package_name = 'torchvision'
+package_name = 'torchvision_mxnet_deform_conv'
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 

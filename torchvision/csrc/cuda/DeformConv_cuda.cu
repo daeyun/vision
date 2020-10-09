@@ -89,6 +89,7 @@ inline int GET_BLOCKS(const int N) {
   return std::min(kMaxGridNum, (N + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS);
 }
 
+// Same as https://github.com/apache/incubator-mxnet/pull/6298
 template <typename scalar_t>
 __device__ scalar_t bilinear_interpolate(
     const scalar_t* in,
@@ -96,32 +97,38 @@ __device__ scalar_t bilinear_interpolate(
     const int width,
     scalar_t h,
     scalar_t w) {
-  if (h <= -1 || height <= h || w <= -1 || width <= w) {
+  if (h <= 0 || height <= h || w <= 0 || width <= w) {
     return 0;
   }
 
   int h_low = floor(h);
   int w_low = floor(w);
-  int h_high = h_low + 1;
-  int w_high = w_low + 1;
+  int h_high;
+  int w_high;
+  if (h_low >= height - 1) {
+    h_high = h_low = height - 1;
+    h = (scalar_t)h_low;
+  }
+  else {
+    h_high = h_low + 1;
+  }
+
+  if (w_low >= width - 1) {
+    w_high = w_low = width - 1;
+    w = (scalar_t)w_low;
+  }
+  else {
+    w_high = w_low + 1;
+  }
 
   scalar_t lh = h - h_low;
   scalar_t lw = w - w_low;
   scalar_t hh = 1 - lh, hw = 1 - lw;
 
-  scalar_t v1 = 0;
-  if (h_low >= 0 && w_low >= 0)
-    v1 = in[h_low * width + w_low];
-  scalar_t v2 = 0;
-  if (h_low >= 0 && w_high <= width - 1)
-    v2 = in[h_low * width + w_high];
-  scalar_t v3 = 0;
-  if (h_high <= height - 1 && w_low >= 0)
-    v3 = in[h_high * width + w_low];
-  scalar_t v4 = 0;
-  if (h_high <= height - 1 && w_high <= width - 1)
-    v4 = in[h_high * width + w_high];
-
+  scalar_t v1 = in[h_low * width + w_low];
+  scalar_t v2 = in[h_low * width + w_high];
+  scalar_t v3 = in[h_high * width + w_low];
+  scalar_t v4 = in[h_high * width + w_high];
   scalar_t w1 = hh * hw, w2 = hh * lw, w3 = lh * hw, w4 = lh * lw;
 
   scalar_t val = (w1 * v1 + w2 * v2 + w3 * v3 + w4 * v4);
